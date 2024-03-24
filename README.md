@@ -15,6 +15,7 @@
 5. Коллекция Postman
 
 socialNetworkColl.postman_collection.json
+
 6. Окружение Postman
 
 socialNetworkEnv.postman_environment.json
