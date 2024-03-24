@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from typing import List, Union
-from fastapi import FastAPI, HTTPException
-from pydantic import confloat, BaseModel
+from fastapi import FastAPI, HTTPException,Depends
+from pydantic import confloat
+from auth_bearer import JWTBearer
 import uuid
 
 import db.redis_tools
@@ -183,7 +184,7 @@ def put_post_update(
 
 
 @app.get(
-    '/user/get/{id}',
+    '/user/get/{id}', dependencies=[Depends(JWTBearer())],
     response_model=User,
     responses={
         '500': {'model': UserGetIdGetResponse},
