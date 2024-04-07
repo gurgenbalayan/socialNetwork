@@ -12,7 +12,7 @@ import uuid
 
 import db.redis_tools
 from models import *
-from db.db import add_user, authenticate_user, get_user_by_id
+from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_user_by_fs_without_index
 from utils.hashing import Hasher
 from utils.security import create_access_token
 from datetime import timedelta
@@ -221,14 +221,23 @@ def post_user_register(
     return UserRegisterPostResponse(user_id=user_id)
 
 @app.get(
-    '/user/search',
-    response_model=List[User],
+    '/user/search', dependencies=[Depends(JWTBearer())],
     responses={
         '500': {'model': UserSearchGetResponse},
         '503': {'model': UserSearchGetResponse1},
     },
 )
 def get_user_search(
-    first_name: str, last_name: str = ...
+    first_name: str, second_name: str
 ) -> Union[List[User], UserSearchGetResponse, UserSearchGetResponse1]:
-    pass
+    #data = get_user_by_fs_without_index(first_name,second_name)
+    data = get_user_by_fs_with_index(first_name, second_name)
+    data_list=[]
+    if data:
+        for user in data:
+            model = {'user_id': user[0], 'first_name': user[1], 'second_name': user[2], 'birthdate': user[3],
+                     'biography': user[4], 'city': user[5]}
+            data_list.append(model)
+        return data_list
+    else:
+        return []

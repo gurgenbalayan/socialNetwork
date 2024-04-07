@@ -1,6 +1,31 @@
 import psycopg2
 from config import load_config
 
+def get_user_by_fs_without_index(first_name, second_name):
+    config = load_config()
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                str1 = "SELECT user_id, first_name, second_name, birthdate, biography, city FROM users WHERE first_name ILIKE '{}%' and second_name ILIKE '{}%' order by user_id asc".format(first_name,second_name)
+                #print(str1)
+                cur.execute(str1)
+                if cur.rowcount > 0:
+                    return cur.fetchall()
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
+
+def get_user_by_fs_with_index(first_name, second_name):
+    config = load_config()
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                str1 = "SELECT user_id, first_name, second_name, birthdate, biography, city FROM users WHERE first_name_tsvector @@ to_tsquery('russian', '{}:*') and second_name_tsvector @@ to_tsquery('russian', '{}:*') order by user_id asc".format(first_name,second_name)
+                #print(str1)
+                cur.execute(str1)
+                if cur.rowcount > 0:
+                    return cur.fetchall()
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
 def add_user(user_id,
              first_name,
              second_name,
