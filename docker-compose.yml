@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  postgres:
+  pgmaster:
     image: postgres:15
     restart: always
     ports:
@@ -10,34 +10,54 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      
-  rabbitmq:
-    image: rabbitmq:management
-    container_name: rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
-      - RABBITMQ_DEFAULT_VHOST=otus
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+    networks:
+      - pgnet
+    volumes:
+      - $PWD/volumes/pgmaster/:/var/lib/postgresql/data
 
-  mysql:
-    image: mysql:5.7
-    restart: always
-    environment:
-      MYSQL_DATABASE: mydb
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin
-      MYSQL_ROOT_PASSWORD: admin
-    ports:
-      - "3306:3306"
-
-  tarantool:
-    image: tarantool/tarantool:2
+  pgslave:
+    image: postgres:15
     restart: always
     ports:
-      - "3301:3301"
+      - 15432:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - pgnet
+    volumes:
+      - $PWD/volumes/pgslave/:/var/lib/postgresql/data
+  pgasyncslave:
+    image: postgres:15
+    restart: always
+    ports:
+      - 25432:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - pgnet
+    volumes:
+      - $PWD/volumes/pgasyncslave/:/var/lib/postgresql/data
+#  rabbitmq:
+#    image: rabbitmq:management
+#    container_name: rabbitmq
+#    environment:
+#      - RABBITMQ_DEFAULT_USER=admin
+#      - RABBITMQ_DEFAULT_PASS=admin
+#      - RABBITMQ_DEFAULT_VHOST=otus
+#    ports:
+#      - "5672:5672"
+#      - "15672:15672"
+#
+#
+#  tarantool:
+#    image: tarantool/tarantool:2
+#    restart: always
+#    ports:
+#      - "3301:3301"
 
   redis:
     image: redis:7
@@ -45,12 +65,12 @@ services:
     ports:
       - "6379:6379"
 
-  memcached:
-    image: memcached
-    restart: always
-    ports:
-      - "11211:11211"
-  
+#  memcached:
+#    image: memcached
+#    restart: always
+#    ports:
+#      - "11211:11211"
+
 networks:
-  default:
-    driver: bridge
+    pgnet:
+        external: true
