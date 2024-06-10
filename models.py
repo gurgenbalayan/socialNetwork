@@ -45,9 +45,7 @@ class DialogMessage(BaseModel):
 
 
 class Post(BaseModel):
-    id: Optional[str] = None
-    text: Optional[PostText] = None
-    author_user_id: Optional[str] = None
+    text: str = Field(..., description='тут пост')
 
 
 class LoginPostRequest(BaseModel):

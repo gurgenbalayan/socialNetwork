@@ -21,6 +21,15 @@ class RedisTools:
         return cls.__redis_connect.get(key)
 
     @classmethod
+    def get_cached_data(cls,key):
+        return cls.__redis_connect.get(key)
+
+    @classmethod
+    def cache_data(cls, key: str, value: bytearray, is_expire: bool = True):
+        cls.__redis_connect.set(key, value)
+        if is_expire:
+            cls.__redis_connect.expire(key, cls.cfg_redis['ttl_cache'])
+    @classmethod
     def delete_value(cls, key: str):
         try:
             cls.__redis_connect.delete(key)
@@ -31,3 +40,4 @@ class RedisTools:
     @classmethod
     def get_keys(cls) -> list[str]:
         return [value.decode('UTF-8') for value in cls.__redis_connect.keys(pattern='*')]
+

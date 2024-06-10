@@ -60,6 +60,21 @@ def add_user(user_id,
     except (psycopg2.DatabaseError, Exception) as error:
         print(error)
 
+
+def get_posts(limit, offset):
+    config = load_config()
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT * FROM posts LIMIT {} OFFSET {}'.format(limit, offset))
+                if cur.rowcount > 0:
+                    final_list=[]
+                    list_of_post=cur.fetchall()
+                    for i in list_of_post:
+                        final_list.append(i[0])
+                    return final_list
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
 def authenticate_user(user_id):
     config = load_config()
     try:

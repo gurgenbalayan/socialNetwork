@@ -3,7 +3,7 @@
 #   timestamp: 2024-03-23T12:29:33+00:00
 
 from __future__ import annotations
-
+import pickle
 from typing import List, Union
 from fastapi import FastAPI, HTTPException,Depends
 from pydantic import confloat
@@ -12,9 +12,9 @@ import uuid
 
 import db.redis_tools
 from models import *
-from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_user_by_fs_without_index
+from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts
 from utils.hashing import Hasher
-from utils.security import create_access_token
+from utils.security import create_access_token, decodeJWT
 from datetime import timedelta
 from db.redis_tools import RedisTools
 from config import load_config
@@ -142,17 +142,25 @@ def put_post_delete_id(
 
 
 @app.get(
-    '/post/feed',
-    response_model=List[Post],
+    '/post/feed', dependencies=[Depends(JWTBearer())],
+    response_model=List[str],
     responses={
         '500': {'model': PostFeedGetResponse},
         '503': {'model': PostFeedGetResponse1},
     },
 )
-def get_post_feed(
+def get_post_feed(token: str = Depends(JWTBearer()),
     offset: Optional[confloat(ge=0.0)] = 0, limit: Optional[confloat(ge=1.0)] = 10
-) -> Union[List[Post], PostFeedGetResponse, PostFeedGetResponse1]:
-    pass
+) -> Union[List[str], PostFeedGetResponse, PostFeedGetResponse1]:
+    id = "feedCache_"+str(limit)+"_"+str(offset)
+    if RedisTools.get_value(id):
+        return pickle.loads(RedisTools.get_value(id))
+    data = get_posts(limit=limit, offset=offset)
+    if data:
+        RedisTools.cache_data(id, bytes(pickle.dumps(data)))
+        return data
+    else:
+        raise HTTPException(status_code=404, detail='Page not found')
 
 
 @app.get(
