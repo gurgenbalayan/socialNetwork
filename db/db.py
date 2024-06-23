@@ -67,7 +67,7 @@ def get_friends(user_id):
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT friend_id_first FROM USERS WHERE friend_id_second='{}'".format(
+                    "SELECT friend_id_first FROM friends WHERE friend_id_second='{}'".format(
                         user_id))
                 if cur.rowcount > 0:
                      for row in cur.fetchall():
