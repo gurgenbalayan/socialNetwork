@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -45,7 +45,9 @@ class DialogMessage(BaseModel):
 
 
 class Post(BaseModel):
+    author_id: str = Field(..., description='7f03ec11-8a0d-4564-885e-135e8fc4d24c')
     text: str = Field(..., description='тут пост')
+    date_post: datetime = Field(..., description='Дата поста', example='2017-02-01')
 
 
 class LoginPostRequest(BaseModel):

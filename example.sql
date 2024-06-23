@@ -1,3 +1,10 @@
+CREATE DATABASE social_network;
+
+select user_id from social_network.users limit 10;
+
+INSERT INTO posts (author_id, posts, date) VALUES ('ce5bd74e-ef89-4f70-a98b-5c4dc288c695','тестовый пост', NOW())
+select author_id, posts, posts.date from posts left join friends on author_id=friend_id_second where friend_id_first='ce5bd74e-ef89-4f70-a98b-5c4dc288c695' ORDER BY posts.date DESC LIMIT 100 OFFSET 0
+
 explain analyze SELECT user_id, first_name, second_name, birthdate, biography, city FROM users WHERE first_name_tsvector @@ to_tsquery('russian', 'ан:*') and second_name_tsvector @@ to_tsquery('russian', 'бе:*') order by user_id asc
 
 explain analyze SELECT user_id, first_name, second_name, birthdate, biography, city FROM users WHERE first_name ilike 'ан%' and second_name ilike 'бе%' order by user_id asc

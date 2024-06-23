@@ -143,7 +143,7 @@ def put_post_delete_id(
 
 @app.get(
     '/post/feed', dependencies=[Depends(JWTBearer())],
-    response_model=List[str],
+    response_model=List[Post],
     responses={
         '500': {'model': PostFeedGetResponse},
         '503': {'model': PostFeedGetResponse1},
@@ -151,13 +151,13 @@ def put_post_delete_id(
 )
 def get_post_feed(token: str = Depends(JWTBearer()),
     offset: Optional[confloat(ge=0.0)] = 0, limit: Optional[confloat(ge=1.0)] = 10
-) -> Union[List[str], PostFeedGetResponse, PostFeedGetResponse1]:
-    id = "feedCache_"+str(limit)+"_"+str(offset)
-    if RedisTools.get_value(id):
-        return pickle.loads(RedisTools.get_value(id))
-    data = get_posts(limit=limit, offset=offset)
+) -> Union[List[Post], PostFeedGetResponse, PostFeedGetResponse1]:
+    user_id = decodeJWT(token)['sub']
+    if RedisTools.get_value("feed_"+user_id):
+        return pickle.loads(RedisTools.get_value("feed_"+user_id))
+    data = get_posts(user_id=user_id, limit=limit, offset=offset)
     if data:
-        RedisTools.cache_data(id, bytes(pickle.dumps(data)))
+        RedisTools.cache_data("feed_"+user_id, bytes(pickle.dumps(data)))
         return data
     else:
         raise HTTPException(status_code=404, detail='Page not found')

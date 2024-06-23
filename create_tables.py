@@ -1,11 +1,32 @@
 import psycopg2
 from config import load_config
 
+
 def create_table_posts():
     commands = (
         """
         CREATE TABLE IF NOT EXISTS posts (
-            posts VARCHAR(2550) NOT NULL)
+            author_id UUID NOT NULL,
+            posts VARCHAR(2550) NOT NULL,
+            date TIMESTAMP NOT NULL)
+        """,
+    )
+    try:
+        config = load_config()
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                for command in commands:
+                    cur.execute(command)
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
+def create_table_friends():
+    commands = (
+        """
+        CREATE TABLE IF NOT EXISTS friends (
+            friend_id_first UUID NOT NULL,
+            friend_id_second UUID NOT NULL,
+            date TIMESTAMP NOT NULL,
+            PRIMARY KEY(friend_id_first, friend_id_second))
         """,
     )
     try:

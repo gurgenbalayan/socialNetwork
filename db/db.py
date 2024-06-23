@@ -61,18 +61,21 @@ def add_user(user_id,
         print(error)
 
 
-def get_posts(limit, offset):
+def get_posts(user_id, limit, offset):
     config = load_config()
+    posts_list = []
     try:
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT * FROM posts LIMIT {} OFFSET {}'.format(limit, offset))
+                cur.execute(
+                    "select author_id, posts, posts.date from posts left join friends on author_id=friend_id_second where friend_id_first='{}' ORDER BY posts.date DESC LIMIT {} OFFSET {}".format(
+                        user_id, limit, offset))
                 if cur.rowcount > 0:
-                    final_list=[]
-                    list_of_post=cur.fetchall()
-                    for i in list_of_post:
-                        final_list.append(i[0])
-                    return final_list
+                    list_of_post = cur.fetchall()
+                    for post in list_of_post:
+                        post_json = {'author_id': post[0], 'text': post[1], 'date_post': post[2]}
+                        posts_list.append(post_json)
+                return posts_list
     except (psycopg2.DatabaseError, Exception) as error:
         print(error)
 def authenticate_user(user_id):
