@@ -16,13 +16,13 @@ def get_limit_friends():
     except (psycopg2.DatabaseError, Exception) as error:
         print(error)
         return friends
-def get_all_friends():
+def get_all_users_with_friends():
     friends = []
     config = load_config()
     try:
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
-                cur.execute("select DISTINCT friends.friend_id_second from friends")
+                cur.execute("select DISTINCT friend_id_first from friends")
                 if cur.rowcount > 0:
                     for row in cur.fetchall():
                         friends.append(row[0])

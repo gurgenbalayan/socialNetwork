@@ -1,15 +1,15 @@
 import pickle
 
-from create_friends import get_all_friends
+from create_friends import get_all_users_with_friends
 from db.db import get_posts, get_friends
 from db.redis_tools import RedisTools
 
 def build_all_cache_for_all_friends():
-    friends = get_all_friends()
-    for friend_id in friends:
-        data = get_posts(friend_id, 1000, 0)
-        RedisTools.delete_value("feed_"+friend_id)
-        RedisTools.cache_data("feed_"+friend_id, bytes(pickle.dumps(data)))
+    users = get_all_users_with_friends()
+    for user in users:
+        data = get_posts(user, 1000, 0)
+        RedisTools.delete_value("feed_"+user)
+        RedisTools.cache_data("feed_"+user, bytes(pickle.dumps(data)))
 
 def rebuild_cache_for_user(user_id):
     data = get_posts(user_id, 1000, 0)
