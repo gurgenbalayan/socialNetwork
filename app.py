@@ -12,12 +12,13 @@ import uuid
 
 import db.redis_tools
 from models import *
-from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts
+from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts, write_post
 from utils.hashing import Hasher
 from utils.security import create_access_token, decodeJWT
 from datetime import timedelta
 from db.redis_tools import RedisTools
 from config import load_config
+from rebuild_cache import rebuild_cache_for_friends
 
 app = FastAPI(
     title='OTUS Highload Architect',
@@ -114,7 +115,7 @@ def post_login(
 
 
 @app.post(
-    '/post/create',
+    '/post/create', dependencies=[Depends(JWTBearer())],
     response_model=str,
     responses={
         '500': {'model': PostCreatePostResponse},
@@ -122,9 +123,16 @@ def post_login(
     },
 )
 def post_post_create(
-    body: PostCreatePostRequest = None,
+    body: PostText, token: str = Depends(JWTBearer())
 ) -> Union[str, PostCreatePostResponse, PostCreatePostResponse1]:
-    pass
+    post = body.text
+    author_id = decodeJWT(token)['sub']
+    w_post = write_post(author_id, post)
+    rebuild_cache_for_friends(author_id)
+    if w_post == "success":
+        return "success"
+    else:
+        return "fail"
 
 
 @app.put(

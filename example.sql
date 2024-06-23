@@ -2,6 +2,8 @@ CREATE DATABASE social_network;
 
 select user_id from social_network.users limit 10;
 
+select DISTINCT friends.friend_id_second from friends
+
 INSERT INTO posts (author_id, posts, date) VALUES ('ce5bd74e-ef89-4f70-a98b-5c4dc288c695','тестовый пост', NOW())
 select author_id, posts, posts.date from posts left join friends on author_id=friend_id_second where friend_id_first='ce5bd74e-ef89-4f70-a98b-5c4dc288c695' ORDER BY posts.date DESC LIMIT 100 OFFSET 0
 

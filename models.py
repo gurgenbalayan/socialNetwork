@@ -25,7 +25,7 @@ class User(BaseModel):
 
 
 class PostText(BaseModel):
-    root: str = Field(
+    text: str = Field(
         ...,
         description='Текст поста',
         example='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Lectus mauris ultrices eros in cursus turpis massa.',

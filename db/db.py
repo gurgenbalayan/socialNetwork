@@ -60,7 +60,33 @@ def add_user(user_id,
     except (psycopg2.DatabaseError, Exception) as error:
         print(error)
 
-
+def get_friends(user_id):
+    config = load_config()
+    friends_list=[]
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT friend_id_first FROM USERS WHERE friend_id_second='{}'".format(
+                        user_id))
+                if cur.rowcount > 0:
+                     for row in cur.fetchall():
+                        friends_list.append(row[0])
+                     return friends_list
+    except (psycopg2.DatabaseError, Exception) as error:
+        return friends_list
+        print(error)
+def write_post(author_id, post):
+    config = load_config()
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO posts (author_id, posts, date) VALUES ('{}','{}', NOW())".format(
+                        author_id, post))
+                return 'success'
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
 def get_posts(user_id, limit, offset):
     config = load_config()
     posts_list = []

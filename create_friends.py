@@ -16,7 +16,20 @@ def get_limit_friends():
     except (psycopg2.DatabaseError, Exception) as error:
         print(error)
         return friends
-
+def get_all_friends():
+    friends = []
+    config = load_config()
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                cur.execute("select DISTINCT friends.friend_id_second from friends")
+                if cur.rowcount > 0:
+                    for row in cur.fetchall():
+                        friends.append(row[0])
+        return friends
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
+        return friends
 
 
 config = load_config()
