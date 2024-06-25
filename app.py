@@ -9,12 +9,9 @@ from typing import List, Union
 import aio_pika
 from fastapi import FastAPI, HTTPException,Depends, Request, WebSocket
 from pydantic import confloat
-from websockets.exceptions import ConnectionClosedOK
 import json
 from auth_bearer import JWTBearer
 import uuid
-
-import db.redis_tools
 from models import *
 from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts, write_post, \
     get_friends
@@ -49,7 +46,8 @@ async def startup_event() -> None:
 
 @app.on_event('shutdown')
 async def shutdown_event() -> None:
-  pass
+    await app.connection.close()
+
 @app.websocket("/post/feed/posted")
 async def websocket_endpoint(websocket: WebSocket, jwt: str = JWTBearer()):
     await websocket.accept()
