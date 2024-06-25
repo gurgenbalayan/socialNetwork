@@ -5,14 +5,19 @@
 from __future__ import annotations
 import pickle
 from typing import List, Union
-from fastapi import FastAPI, HTTPException,Depends
+
+import aio_pika
+from fastapi import FastAPI, HTTPException,Depends, Request, WebSocket
 from pydantic import confloat
+from websockets.exceptions import ConnectionClosedOK
+import json
 from auth_bearer import JWTBearer
 import uuid
 
 import db.redis_tools
 from models import *
-from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts, write_post
+from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts, write_post, \
+    get_friends
 from utils.hashing import Hasher
 from utils.security import create_access_token, decodeJWT
 from datetime import timedelta
@@ -20,10 +25,59 @@ from db.redis_tools import RedisTools
 from config import load_config
 from rebuild_cache import rebuild_cache_for_friends
 
+
 app = FastAPI(
     title='OTUS Highload Architect',
     version='1.2.0',
 )
+
+@app.on_event('startup')
+async def startup_event() -> None:
+    cfg_rabbitmq = load_config(section='rabbitmq')
+    url = cfg_rabbitmq['url']
+    robust_connecton = await aio_pika.connect_robust(url)
+    app.connection = robust_connecton
+    async def _confirms_channel():
+        return await robust_connecton.channel(publisher_confirms=True)
+
+    async def _transactional_channel():
+        return await robust_connecton.channel(publisher_confirms=False)
+
+    app.channel_pool_sub = aio_pika.pool.Pool(_confirms_channel, max_size=10000)
+    app.channel_pool_pub = aio_pika.pool.Pool(_confirms_channel, max_size=10000)
+    app.channel_pool_pub_tx = aio_pika.pool.Pool(_transactional_channel, max_size=10000)
+
+@app.on_event('shutdown')
+async def shutdown_event() -> None:
+  pass
+@app.websocket("/post/feed/posted")
+async def websocket_endpoint(websocket: WebSocket, jwt: str = JWTBearer()):
+    await websocket.accept()
+    data = await websocket.receive_text()
+    data = json.loads(data)
+    token = data["token"]
+    user_id = decodeJWT(token)['sub']
+    if jwt.verify_jwt(token):
+        uuid_str = str(uuid.uuid4())
+        await websocket.send_text(f"SUCCESS LOGIN")
+        cfg_rabbitmq = load_config(section='rabbitmq')
+        url = cfg_rabbitmq['url']
+        async with app.channel_pool_sub.acquire() as channel:
+            await channel.set_qos(prefetch_count=5)
+            ex_new_posts = await channel.get_exchange('posts', ensure=False)
+            queue = await channel.declare_queue(uuid_str, auto_delete=True)
+            await queue.bind(ex_new_posts, routing_key=user_id)
+            async with queue.iterator() as queue_iter:
+                async for message in queue_iter:
+                    async with message.process():
+                        await websocket.send_text(message.body)
+                        if queue.name in message.body.decode():
+                            break
+
+    else:
+        await websocket.send_text(f"INVALID TOKEN")
+        await websocket.close()
+
 
 
 @app.get(
@@ -40,6 +94,7 @@ def get_dialog_user_id_list(
     List[DialogMessage], DialogUserIdListGetResponse, DialogUserIdListGetResponse1
 ]:
     pass
+
 
 
 @app.post(
@@ -120,14 +175,26 @@ def post_login(
     responses={
         '500': {'model': PostCreatePostResponse},
         '503': {'model': PostCreatePostResponse1},
-    },
+    }
 )
-def post_post_create(
-    body: PostText, token: str = Depends(JWTBearer())
+async def post_post_create(
+    request: Request, body: PostText, token: str = Depends(JWTBearer())
 ) -> Union[str, PostCreatePostResponse, PostCreatePostResponse1]:
     post = body.text
     author_id = decodeJWT(token)['sub']
+    post_queue = str({
+            "postId": str(uuid.uuid4()),
+            "postText": post,
+            "author_user_id": author_id
+          }
+    )
+    friends = get_friends(author_id)
     w_post = write_post(author_id, post)
+    async with request.app.channel_pool_pub_tx.acquire() as channel:
+        ex_new_posts = await channel.get_exchange('posts', ensure=False)
+        async with channel.transaction():
+            for user_id in friends:
+                await ex_new_posts.publish(aio_pika.Message(body=f"{post_queue}".encode()), routing_key=user_id, mandatory=False)
     rebuild_cache_for_friends(author_id)
     if w_post == "success":
         return "success"

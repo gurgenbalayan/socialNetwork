@@ -31,6 +31,12 @@ class PostText(BaseModel):
         example='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Lectus mauris ultrices eros in cursus turpis massa.',
     )
 
+class PostId(BaseModel):
+    text: str = Field(
+        ...,
+        description='Id поста',
+        example='1d535fd6-7521-4cb1-aa6d-031be7123c4d',
+    )
 
 class DialogMessageText(BaseModel):
     root: str = Field(

@@ -41,16 +41,16 @@ services:
       - pgnet
     volumes:
       - $PWD/volumes/pgasyncslave/:/var/lib/postgresql/data
-#  rabbitmq:
-#    image: rabbitmq:management
-#    container_name: rabbitmq
-#    environment:
-#      - RABBITMQ_DEFAULT_USER=admin
-#      - RABBITMQ_DEFAULT_PASS=admin
-#      - RABBITMQ_DEFAULT_VHOST=otus
-#    ports:
-#      - "5672:5672"
-#      - "15672:15672"
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+      - RABBITMQ_DEFAULT_VHOST=otus
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 #
 #
 #  tarantool:
