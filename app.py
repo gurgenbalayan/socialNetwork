@@ -14,7 +14,7 @@ from auth_bearer import JWTBearer
 import uuid
 from models import *
 from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts, write_post, \
-    get_friends
+    get_friends, send_message, get_dialog
 from utils.hashing import Hasher
 from utils.security import create_access_token, decodeJWT
 from datetime import timedelta
@@ -46,6 +46,9 @@ async def startup_event() -> None:
 
 @app.on_event('shutdown')
 async def shutdown_event() -> None:
+    await app.channel_pool_sub.close()
+    await app.channel_pool_pub.close()
+    await app.channel_pool_pub_tx.close()
     await app.connection.close()
 
 @app.websocket("/post/feed/posted")
@@ -79,7 +82,7 @@ async def websocket_endpoint(websocket: WebSocket, jwt: str = JWTBearer()):
 
 
 @app.get(
-    '/dialog/{user_id}/list',
+    '/dialog/{user_id}/list', dependencies=[Depends(JWTBearer())],
     response_model=List[DialogMessage],
     responses={
         '500': {'model': DialogUserIdListGetResponse},
@@ -87,26 +90,37 @@ async def websocket_endpoint(websocket: WebSocket, jwt: str = JWTBearer()):
     },
 )
 def get_dialog_user_id_list(
-    user_id: str,
+    user_id: str, token: str = Depends(JWTBearer())
 ) -> Union[
     List[DialogMessage], DialogUserIdListGetResponse, DialogUserIdListGetResponse1
 ]:
-    pass
+    my_id = decodeJWT(token)['sub']
+    data = get_dialog(my_id, user_id)
+    if data:
+        return data
+    else:
+        raise HTTPException(status_code=404, detail='Page not found')
 
 
 
 @app.post(
-    '/dialog/{user_id}/send',
-    response_model=None,
+    '/dialog/{user_id}/send',dependencies=[Depends(JWTBearer())],
+    response_model=str,
     responses={
         '500': {'model': DialogUserIdSendPostResponse},
         '503': {'model': DialogUserIdSendPostResponse1},
     },
 )
 def post_dialog_user_id_send(
-    user_id: str, body: DialogUserIdSendPostRequest = None
+    user_id: str, token: str = Depends(JWTBearer()), body: DialogUserIdSendPostRequest = None
 ) -> Union[None, DialogUserIdSendPostResponse, DialogUserIdSendPostResponse1]:
-    pass
+    sender = decodeJWT(token)['sub']
+    text = body.text.root
+    if text is None or text == '':
+        return 'message cannot be empty'
+    else:
+        result=send_message(sender, user_id, text)
+        return result
 
 
 @app.put(

@@ -45,9 +45,9 @@ class DialogMessageText(BaseModel):
 
 
 class DialogMessage(BaseModel):
-    from_: str = Field(..., alias='from')
-    to: str
-    text: DialogMessageText
+    who: str = Field(..., description='7f03ec11-8a0d-4564-885e-135e8fc4d24c')
+    text: str = Field(..., description='тут сообщение')
+    date_message: datetime = Field(..., description='Дата сообщения', example='2017-02-01')
 
 
 class Post(BaseModel):

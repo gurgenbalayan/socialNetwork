@@ -1,5 +1,5 @@
 import psycopg2
-from config import load_config
+from config import load_config, load_config2
 
 
 def create_table_posts():
@@ -13,6 +13,26 @@ def create_table_posts():
     )
     try:
         config = load_config()
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                for command in commands:
+                    cur.execute(command)
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
+
+def create_table_dialogs():
+    commands = (
+        """
+        CREATE TABLE IF NOT EXISTS dialogs (
+            id bigint NOT NULL PRIMARY KEY,
+            sender UUID NOT NULL,
+            recipient UUID NOT NULL,
+            text VARCHAR(2550) NOT NULL,
+            date TIMESTAMP NOT NULL)
+        """,
+    )
+    try:
+        config = load_config2()
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
                 for command in commands:

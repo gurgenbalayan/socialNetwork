@@ -1,5 +1,6 @@
 import psycopg2
-from config import load_config
+from config import load_config, load_config2
+
 
 def get_user_by_fs_without_index(first_name, second_name):
     config = load_config()
@@ -132,5 +133,35 @@ def get_user_by_id(user_id):
                     """, (user_id,))
                 if cur.rowcount > 0:
                     return cur.fetchone()
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
+def send_message(sender, recipient, message):
+    config = load_config2()
+    sql_line = "INSERT INTO dialogs(sender,recipient,text,date) VALUES ('{}','{}','{}', NOW())".format(sender, recipient, message)
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql_line)
+        return 'success'
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
+        return 'fail'
+def get_dialog(my_id, someone_id):
+    config = load_config2()
+    messages_list = []
+    sql_line = "SELECT sender,recipient,text,date FROM dialogs WHERE (sender = '{}' and recipient = '{}') or (sender = '{}' and recipient = '{}') ORDER BY date DESC".format(my_id, someone_id, someone_id, my_id)
+    try:
+        with (psycopg2.connect(**config) as conn):
+            with conn.cursor() as cur:
+                cur.execute(sql_line)
+                if cur.rowcount > 0:
+                    list_of_messages = cur.fetchall()
+                    for message in list_of_messages:
+                        if message[0] == my_id:
+                            message_json = {'who': "I'm", 'text': message[2], 'date_message': message[3]}
+                        else:
+                            message_json = {'who': str(message[0]), 'text': message[2], 'date_message': message[3]}
+                        messages_list.append(message_json)
+                return messages_list
     except (psycopg2.DatabaseError, Exception) as error:
         print(error)

@@ -1,11 +1,46 @@
 version: '3'
 
 services:
+  master:
+    container_name: "citus_master"
+    image: "citusdata/citus"
+    ports:
+      - 5432:5432
+    labels: ["com.citusdata.role=Master"]
+    environment: &AUTH
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - pgnet
+  worker:
+    image: "citusdata/citus"
+    labels: ["com.citusdata.role=Worker"]
+    depends_on: [manager]
+    environment: *AUTH
+    command: "/wait-for-manager.sh"
+    volumes:
+      - healthcheck-volume:/healthcheck
+    networks:
+      - pgnet
+  manager:
+    container_name: "citus_manager"
+    image: "citusdata/membership-manager"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - healthcheck-volume:/healthcheck
+    depends_on: [master]
+    environment: *AUTH
+    networks:
+      - pgnet
   pgmaster:
     image: postgres:15
     restart: always
     ports:
-      - 5432:5432
+      - 15432:5432
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -19,7 +54,7 @@ services:
     image: postgres:15
     restart: always
     ports:
-      - 15432:5432
+      - 25432:5432
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -32,7 +67,7 @@ services:
     image: postgres:15
     restart: always
     ports:
-      - 25432:5432
+      - 35432:5432
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -70,7 +105,8 @@ services:
 #    restart: always
 #    ports:
 #      - "11211:11211"
-
+volumes:
+  healthcheck-volume:
 networks:
     pgnet:
         external: true
