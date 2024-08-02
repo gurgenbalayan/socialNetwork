@@ -14,7 +14,7 @@ from auth_bearer import JWTBearer
 import uuid
 from models import *
 from db.db import add_user, authenticate_user, get_user_by_id, get_user_by_fs_with_index, get_posts, write_post, \
-    get_friends, send_message, get_dialog
+    get_friends, send_message, get_dialog, send_message_tarantool, get_dialog_tarantool
 from utils.hashing import Hasher
 from utils.security import create_access_token, decodeJWT
 from datetime import timedelta
@@ -95,7 +95,7 @@ def get_dialog_user_id_list(
     List[DialogMessage], DialogUserIdListGetResponse, DialogUserIdListGetResponse1
 ]:
     my_id = decodeJWT(token)['sub']
-    data = get_dialog(my_id, user_id)
+    data = get_dialog_tarantool(my_id, user_id)
     if data:
         return data
     else:
@@ -119,7 +119,7 @@ def post_dialog_user_id_send(
     if text is None or text == '':
         return 'message cannot be empty'
     else:
-        result=send_message(sender, user_id, text)
+        result=send_message_tarantool(sender, user_id, text)
         return result
 
 
