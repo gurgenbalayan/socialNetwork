@@ -45,7 +45,7 @@ def index():
     #return {'request_id': get_request_id()}
 
 @app2.get(
-    '/dialog/{user_id}/list', dependencies=[Depends(JWTBearer())],
+    '/dialog/v2/{user_id}/list', dependencies=[Depends(JWTBearer())],
     response_model=List[DialogMessage],
     responses={
         '500': {'model': DialogUserIdListGetResponse},
@@ -67,7 +67,7 @@ def get_dialog_user_id_list(
 
 
 @app2.post(
-    '/dialog/{user_id}/send',dependencies=[Depends(JWTBearer())],
+    '/dialog/v2/{user_id}/send',dependencies=[Depends(JWTBearer())],
     response_model=str,
     responses={
         '500': {'model': DialogUserIdSendPostResponse},
