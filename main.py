@@ -10,4 +10,4 @@ if __name__ == '__main__':
 #    create_table_friends()
 #    create_table_dialogs()
 #    build_all_cache_for_all_friends()
-    uvicorn.run('app:app', host='127.0.0.1', port=8005)
+    uvicorn.run('app:app', host='127.0.0.1', port=8005, log_config="log_conf.yaml")

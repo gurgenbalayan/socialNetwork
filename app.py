@@ -7,7 +7,9 @@ import pickle
 from typing import List, Union
 
 import aio_pika
-from fastapi import FastAPI, HTTPException,Depends, Request, WebSocket
+from asgi_correlation_id.middleware import is_valid_uuid4
+from fastapi import FastAPI, HTTPException,Depends, Request, WebSocket, Response
+from fastapi.responses import JSONResponse
 from pydantic import confloat
 import json
 from auth_bearer import JWTBearer
@@ -21,11 +23,34 @@ from datetime import timedelta
 from db.redis_tools import RedisTools
 from config import load_config
 from rebuild_cache import rebuild_cache_for_friends
+import logging
+from asgi_correlation_id import CorrelationIdMiddleware
+from loguru import logger
+import sys
+def configure_logging():
+    from asgi_correlation_id.context import correlation_id
+
+    def correlation_id_filter(record):
+        record['correlation_id'] = correlation_id.get()
+        return record['correlation_id']
+
+    logger.remove()
+    fmt = "{level}: \t  {time} {name}:{line} [{correlation_id}] - {message}"
+    logger.add(sys.stderr, format=fmt, level=logging.DEBUG, filter=correlation_id_filter)
 
 
 app = FastAPI(
+    on_startup=[configure_logging],
     title='OTUS Highload Architect',
-    version='1.2.0',
+    version='1.2.0')
+
+app.add_middleware(
+    CorrelationIdMiddleware,
+    header_name='X-Request-ID',
+    update_request_header=True,
+    generator=lambda: uuid.uuid4().hex,
+    validator=is_valid_uuid4,
+    transformer=lambda a: a,
 )
 
 @app.on_event('startup')
