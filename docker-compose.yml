@@ -1,43 +1,9 @@
 version: '3'
 
 services:
-  master:
-    container_name: "citus_master"
-    image: "citusdata/citus"
-    ports:
-      - 5432:5432
-    labels: ["com.citusdata.role=Master"]
-    environment: &AUTH
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-      POSTGRES_PASSWORD: postgres
-      PGUSER: postgres
-      PGPASSWORD: postgres
-      POSTGRES_HOST_AUTH_METHOD: trust
-    networks:
-      - pgnet
-  worker:
-    image: "citusdata/citus"
-    labels: ["com.citusdata.role=Worker"]
-    depends_on: [manager]
-    environment: *AUTH
-    command: "/wait-for-manager.sh"
-    volumes:
-      - healthcheck-volume:/healthcheck
-    networks:
-      - pgnet
-  manager:
-    container_name: "citus_manager"
-    image: "citusdata/membership-manager"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - healthcheck-volume:/healthcheck
-    depends_on: [master]
-    environment: *AUTH
-    networks:
-      - pgnet
   pgmaster:
     image: postgres:15
+    container_name: pgmaster
     restart: always
     ports:
       - 15432:5432
@@ -49,9 +15,9 @@ services:
       - pgnet
     volumes:
       - $PWD/volumes/pgmaster/:/var/lib/postgresql/data
-
   pgslave:
     image: postgres:15
+    container_name: pgslave
     restart: always
     ports:
       - 25432:5432
@@ -65,6 +31,7 @@ services:
       - $PWD/volumes/pgslave/:/var/lib/postgresql/data
   pgasyncslave:
     image: postgres:15
+    container_name: pgasyncslave
     restart: always
     ports:
       - 35432:5432
@@ -76,6 +43,30 @@ services:
       - pgnet
     volumes:
       - $PWD/volumes/pgasyncslave/:/var/lib/postgresql/data
+  haproxy:
+    image: haproxy:2.4
+    container_name: haproxy-lb
+    restart: "no"
+    networks:
+      - pgnet
+    volumes:
+      - "./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg"
+    ports:
+      - "5432:5432"
+      - "8404:8404"
+  nginx:
+    image: nginx:1.21
+    container_name: nginx-lb
+    restart: on-failure
+    networks:
+      - pgnet
+    volumes:
+      - "./default.conf:/etc/nginx/conf.d/default.conf"
+    ports:
+      - "4088:80"
+      - "4098:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   rabbitmq:
     image: rabbitmq:management
     container_name: rabbitmq
@@ -116,3 +107,4 @@ volumes:
 networks:
     pgnet:
         external: true
+
