@@ -1,7 +1,24 @@
 import psycopg2
 from config import load_config, load_config2
 
-
+def create_table_chats():
+    commands = (
+        """
+        CREATE TABLE IF NOT EXISTS chats (
+        user_id UUID NOT NULL,
+        companion UUID NOT NULL,
+        unread bigint NOT NULL,
+        date TIMESTAMP NOT NULL)
+        """,
+    )
+    try:
+        config = load_config()
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                for command in commands:
+                    cur.execute(command)
+    except (psycopg2.DatabaseError, Exception) as error:
+        print(error)
 def create_table_posts():
     commands = (
         """

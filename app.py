@@ -120,7 +120,7 @@ def get_dialog_user_id_list(
     List[DialogMessage], DialogUserIdListGetResponse, DialogUserIdListGetResponse1
 ]:
     my_id = decodeJWT(token)['sub']
-    data = get_dialog_tarantool(my_id, user_id)
+    data = get_dialog(my_id, user_id)
     if data:
         return data
     else:
@@ -144,7 +144,7 @@ def post_dialog_user_id_send(
     if text is None or text == '':
         return 'message cannot be empty'
     else:
-        result=send_message_tarantool(sender, user_id, text)
+        result=send_message(sender, user_id, text)
         return result
 
 

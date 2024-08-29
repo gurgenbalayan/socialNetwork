@@ -183,8 +183,8 @@ def get_dialog_tarantool(sender, recipient):
     except:
         return []
 def send_message(sender, recipient, message):
-    config = load_config2()
-    sql_line = "INSERT INTO dialogs(sender,recipient,text,date) VALUES ('{}','{}','{}', NOW())".format(sender, recipient, message)
+    config = load_config()
+    sql_line = "INSERT INTO dialogs(sender,recipient,text,date,unread) VALUES ('{}','{}','{}', NOW(),'Y')".format(sender, recipient, message)
     try:
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
@@ -194,7 +194,7 @@ def send_message(sender, recipient, message):
         print(error)
         return 'fail'
 def get_dialog(my_id, someone_id):
-    config = load_config2()
+    config = load_config()
     messages_list = []
     sql_line = "SELECT sender,recipient,text,date FROM dialogs WHERE (sender = '{}' and recipient = '{}') or (sender = '{}' and recipient = '{}') ORDER BY date DESC".format(my_id, someone_id, someone_id, my_id)
     try:

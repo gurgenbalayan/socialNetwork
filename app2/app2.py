@@ -2,12 +2,13 @@
 from __future__ import annotations
 from typing import List, Union
 from uuid import uuid4
-
+from saga_coordinator import execute_saga
 from asgi_correlation_id.middleware import is_valid_uuid4
-from fastapi import FastAPI, HTTPException,Depends
+from fastapi import FastAPI, HTTPException, Depends
+import requests
 from auth_bearer import JWTBearer
 from models2 import *
-from db2 import send_message_tarantool, get_dialog_tarantool
+from db2 import send_message_tarantool, get_dialog_tarantool, send_message, get_dialog
 from utils.security import decodeJWT
 import logging
 from asgi_correlation_id import CorrelationIdMiddleware
@@ -58,7 +59,10 @@ def get_dialog_user_id_list(
     List[DialogMessage], DialogUserIdListGetResponse, DialogUserIdListGetResponse1
 ]:
     my_id = decodeJWT(token)['sub']
-    data = get_dialog_tarantool(my_id, user_id)
+    requests.post('http://127.0.0.1:8008/dialog/v2/{}/add_read'.format(user_id),
+                  headers={"Content-Type": "application/json",
+                           "Authorization": "Bearer {}".format(token)})
+    data = get_dialog(my_id, user_id)
     if data:
         return data
     else:
@@ -79,9 +83,11 @@ def post_dialog_user_id_send(
 ) -> Union[None, DialogUserIdSendPostResponse, DialogUserIdSendPostResponse1]:
     sender = decodeJWT(token)['sub']
     text = body.text.root
+    date = datetime.now()
     if text is None or text == '':
         return 'message cannot be empty'
     else:
-        result=send_message_tarantool(sender, user_id, text)
+#        result=send_message(sender, user_id, text, date)
+        result = execute_saga(sender, user_id, text, date)
         return result
 
