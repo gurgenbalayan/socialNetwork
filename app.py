@@ -3,6 +3,7 @@
 #   timestamp: 2024-03-23T12:29:33+00:00
 
 from __future__ import annotations
+from prometheus_fastapi_instrumentator import Instrumentator
 import pickle
 from typing import List, Union
 
@@ -366,3 +367,4 @@ def get_user_search(
         return data_list
     else:
         return []
+Instrumentator().instrument(app).expose(app)

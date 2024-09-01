@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from prometheus_fastapi_instrumentator import Instrumentator
 from typing import List, Union
 from uuid import uuid4
 from asgi_correlation_id.middleware import is_valid_uuid4
@@ -40,13 +41,7 @@ app2.add_middleware(
     validator=is_valid_uuid4,
     transformer=lambda a: a,
 )
-@app2.get(
-    '/metrics',
-    response_model=str,
-)
-def geet_metrics():
-    model = {'status': 'success'}
-    return str(model)
+
 @app2.get('/')
 def index():
 
@@ -99,3 +94,4 @@ def post_dialog_user_id_send(
         result = execute_saga(sender, user_id, text, date)
         return result
 
+Instrumentator().instrument(app2).expose(app2)
