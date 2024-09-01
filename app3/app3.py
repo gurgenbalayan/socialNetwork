@@ -58,7 +58,12 @@ def get_dialog_user_chat_create(
     data = add_unread(my_id, user_id,date)
     return data
 
-
+@app3.get(
+    '/metrics',
+    response_model=str,
+)
+def geet_metrics():
+    return 1
 
 @app3.post(
     '/dialog/v2/{user_id}/add_read',dependencies=[Depends(JWTBearer())],

@@ -2,7 +2,6 @@
 from __future__ import annotations
 from typing import List, Union
 from uuid import uuid4
-from saga_coordinator import execute_saga
 from asgi_correlation_id.middleware import is_valid_uuid4
 from fastapi import FastAPI, HTTPException, Depends
 import requests
@@ -13,6 +12,9 @@ from utils.security import decodeJWT
 import logging
 from asgi_correlation_id import CorrelationIdMiddleware
 from loguru import logger
+import sys
+sys.path.insert(0,"../")
+from saga_coordinator import execute_saga
 import sys
 def configure_logging():
     from asgi_correlation_id.context import correlation_id
@@ -38,7 +40,13 @@ app2.add_middleware(
     validator=is_valid_uuid4,
     transformer=lambda a: a,
 )
-
+@app2.get(
+    '/metrics',
+    response_model=str,
+)
+def geet_metrics():
+    model = {'status': 'success'}
+    return str(model)
 @app2.get('/')
 def index():
 

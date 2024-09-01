@@ -146,7 +146,12 @@ def post_dialog_user_id_send(
     else:
         result=send_message(sender, user_id, text)
         return result
-
+@app.get(
+    '/metrics',
+    response_model=str,
+)
+def geet_metrics():
+    return 1
 
 @app.put(
     '/friend/delete/{user_id}',
